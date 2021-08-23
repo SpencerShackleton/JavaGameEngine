@@ -41,6 +41,11 @@ public class TestGame extends Game {
 		planeObject.getTransform().getPos().set(0, -1, 5);
 		planeObject.getTransform().setScale(4f);
 
+		GameObject houseObject = new GameObject();
+		houseObject.addComponent(new MeshRenderer(new Mesh("house_04.obj"), new Material(new Texture("grey.png"), 1, 8)));
+		houseObject.getTransform().setScale(0.02f);
+		addToScene(houseObject);
+
 		GameObject directionalLightObject = new GameObject();
 		DirectionalLight directionalLight = new DirectionalLight(new Vector3f(1,1,1), 0.4f);
 		directionalLightObject.addComponent(directionalLight);
@@ -50,7 +55,7 @@ public class TestGame extends Game {
 		pointLightObject.addComponent(new PointLight(new Vector3f(0,1,0), 0.4f, new Attenuation(0,0,1)));
 
 		SpotLight spotLight = new SpotLight(new Vector3f(0,1,1), 0.4f,
-				new Attenuation(0,0,0.02f), (float) Math.toRadians(91.1f), 10);
+											new Attenuation(0,0,0.02f), (float) Math.toRadians(91.1f), 10);
 
 		GameObject spotLightObject = new GameObject();
 		spotLightObject.addComponent(spotLight);
@@ -105,5 +110,10 @@ public class TestGame extends Game {
 		box.getTransform().setPos(new Vector3f(14, 0, 5));
 		box.getTransform().setRot(new Quad(new Vector3f(0,1,0), (float) Math.toRadians(30f)));
 		addToScene(box);
+
+//		GameObject skyBox = new GameObject();
+//		box.addComponent(new MeshRenderer(new Mesh("cube.obj"), new Material(new Texture("grey.png"), 1f, 8f)));
+//		box.getTransform().setScale(1000f);
+		//addToScene(skyBox);
 	}
 }
