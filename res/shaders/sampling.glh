@@ -1,0 +1,56 @@
+vec2 calcParallaxTexCoords(sampler2D dispMap, mat3 tbnMatrix, vec3 dirToEye, vec2 texCoord0, float dispMapScale, float dispMapBias) {
+	return texCoord0.xy + (dirToEye * tbnMatrix).xy * (texture2D(dispMap, texCoord0.xy).r * dispMapScale + dispMapBias);
+}
+
+float sampleShadowMap(sampler2D shadowMap, vec2 coords, float compare) {	
+	return step(compare, texture2D(shadowMap, coords.xy).r);
+}
+
+float sampleShadowMapLinear(sampler2D shadowMap, vec2 coords, float compare, vec2 texelSize) {
+	vec2 pixelPos = coords/texelSize + vec2(0.5);
+	vec2 fracPart = fract(pixelPos);
+	vec2 startTexel = (pixelPos - fracPart) * texelSize;
+	
+	float bl = sampleShadowMap(shadowMap, startTexel, compare);
+	float br = sampleShadowMap(shadowMap, startTexel + vec2(texelSize.x, 0.0), compare);
+	float tl = sampleShadowMap(shadowMap, startTexel + vec2(0.0, texelSize.y), compare);
+	float tr = sampleShadowMap(shadowMap, startTexel + vec2(texelSize.x, texelSize.y), compare);
+	
+	float mixA = mix(bl, tl, fracPart.y);
+	float mixB = mix(br, tr, fracPart.y);
+	
+	return mix(mixA, mixB, fracPart.x);
+}
+
+float sampleShadowMapPCF(sampler2D shadowMap, vec2 coords, float compare, vec2 texelSize) {
+	const float NUM_SAMPLES = 3.0f;
+	const float SAMPLES_START = (NUM_SAMPLES-1.0f)/2.0f;
+	const float NUM_SAMPLES_SQUARED = NUM_SAMPLES*NUM_SAMPLES;
+	
+	float result = 0.0f;
+	
+	for (float y = -SAMPLES_START; y <= SAMPLES_START; y += 1.0f) {
+		for (float x = -SAMPLES_START; x <= SAMPLES_START; x += 1.0f) {
+		
+			vec2 offset = vec2(x, y) * texelSize;
+			result += sampleShadowMapLinear(shadowMap, coords + offset, compare, texelSize);		
+		}
+	}
+	return result/NUM_SAMPLES_SQUARED;
+}
+
+float linStep(float low, float high, float v) {
+	return clamp((v-low)/(high-low), 0.0, 1.0);
+}
+
+float sampleVarianceShadowMap(sampler2D shadowMap, vec2 coords, float compare, float varMin, float lightBleedReduction) {	
+	vec2 moments = texture2D(shadowMap, coords.xy).xy;
+	
+	float p = step(compare, moments.x);
+	float variance = max(moments.y - moments.x * moments.x, varMin);
+	
+	float d = compare - moments.x;
+	float pMax = linStep(lightBleedReduction, 1.0, variance / (variance + d*d));
+	
+	return min(max(p, pMax), 1.0);
+}
